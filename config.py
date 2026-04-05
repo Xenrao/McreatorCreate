@@ -4,13 +4,11 @@ import sys
 
 def get_config_path():
     if getattr(sys, 'frozen', False):
-        # exe olarak çalışıyorsa
-        base_path = os.getenv("APPDATA")  # Windows AppData
-        app_folder = os.path.join(base_path, "MyAppName")  # istediğin isim
+        base_path = os.getenv("APPDATA") 
+        app_folder = os.path.join(base_path, "KineticBlockConverter") 
         os.makedirs(app_folder, exist_ok=True)
         return os.path.join(app_folder, "user_config.json")
     else:
-        # normal python çalışıyorsa
         return os.path.join(os.path.dirname(__file__), "user_config.json")
 
 CONFIG_SAVE_PATH = get_config_path()
