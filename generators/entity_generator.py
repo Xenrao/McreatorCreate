@@ -60,41 +60,45 @@ class EntityGenerator:
         return '\n' + '\n'.join(self.transformer.tick_imports)
 
     def _tick_section(self):
-        if not self.transformer.tick_body:
-            return ''
-
-        converted_lines = []
-        for line in self.transformer.tick_body:
-            stripped = line.strip()
-
-            if stripped.startswith('super.tick('):
-                continue
-
-            converted = line
-            converted = converted.replace('world,', 'this.level,')
-            converted = converted.replace('world.', 'this.level.')
-            converted = converted.replace(', world)', ', this.level)')
-            converted = converted.replace('(world)', '(this.level)')
-            converted = converted.replace('pos.getX()', 'this.getBlockPos().getX()')
-            converted = converted.replace('pos.getY()', 'this.getBlockPos().getY()')
-            converted = converted.replace('pos.getZ()', 'this.getBlockPos().getZ()')
-            converted = converted.replace('blockstate', 'this.getBlockState()')
-            converted = converted.replace(', pos)', ', this.getBlockPos())')
-            converted = converted.replace('(pos)', '(this.getBlockPos())')
-            converted = converted.replace('pos,', 'this.getBlockPos(),')
-            converted = converted.replace('random', 'this.level.random')
-
-            converted_lines.append('        ' + converted.strip())
-
-        tick_lines = '\n'.join(converted_lines)
-        return (
-            '\n'
-            '    @Override\n'
-            '    public void tick() {\n'
-            '        super.tick();\n'
-            f'{tick_lines}\n'
-            '    }\n'
-        )
+        return ''
+#        if not self.transformer.tick_body:
+#            return ''
+#
+#        converted_lines = []
+#        for line in self.transformer.tick_body:
+#            stripped = line.strip()
+#
+#            if stripped.startswith('super.tick('):
+#                continue
+#
+#            converted = line
+#            converted = converted.replace('world,', 'this.level,')
+#            converted = converted.replace('world.', 'this.level.')
+#            converted = converted.replace(', world)', ', this.level)')
+#            converted = converted.replace('(world)', '(this.level)')
+#            converted = converted.replace('pos.getX()', 'this.getBlockPos().getX()')
+#            converted = converted.replace('pos.getY()', 'this.getBlockPos().getY()')
+#            converted = converted.replace('pos.getZ()', 'this.getBlockPos().getZ()')
+#            converted = converted.replace('blockstate', 'this.getBlockState()')
+#            converted = converted.replace(', pos)', ', this.getBlockPos())')
+#            converted = converted.replace('(pos)', '(this.getBlockPos())')
+#            converted = converted.replace('pos,', 'this.getBlockPos(),')
+#            converted = converted.replace('random', 'this.level.random')
+#
+#            converted_lines.append('        ' + converted.strip())
+#
+#        tick_lines = '\n'.join(converted_lines)
+#        return (
+#            '\n'
+#            '    @Override\n'
+#            '    public void tick() {\n'
+#            '        super.tick();\n'
+#            '        tickCounter++;\n'
+#            '        if (tickCounter % tickTrigger == 0) {\n'
+#            f'    {tick_lines}\n'
+#            '        }\n'
+#            '    }\n'
+#        )
 
     def _goggle_section(self):
         if not self.config.get('use_goggle_override'):
@@ -107,6 +111,14 @@ class EntityGenerator:
             '        return super.addToGoggleTooltip(tooltip, isPlayerSneaking);\n'
             '    }\n'
         )
+    
+    def _procedure_section(self):
+        procedure = self.config.get('procedure')
+        if procedure:
+            return (
+                f'{procedure}Procedure.execute(this.level, this.getBlockPos().getX(), this.getBlockPos().getY(), this.getBlockPos().getZ(), this.getBlockState());'
+            )
+        return ''
 
     def _generator_entity(self):
         p = self.parser
@@ -115,9 +127,10 @@ class EntityGenerator:
         block_const = camel_to_snake_upper(p.simple_name)
         be_const = block_const + '_BE'
         be_registry = p.be_registry_name
-        tick = self._tick_section()
+        #tick = self._tick_section()
+        procedure = self._procedure_section()
         goggle = self._goggle_section()
-        tick_imports = self._get_tick_imports_str()
+        #tick_imports = self._get_tick_imports_str()
 
         # --- DEĞİŞEN KISIM ---
         mod_blocks_class = self._get_mod_blocks_class()
@@ -136,7 +149,7 @@ class EntityGenerator:
         return f'''package {pkg}.block.entity;
 
 import com.simibubi.create.api.stress.BlockStressValues;
-import com.simibubi.create.content.kinetics.base.GeneratingKineticBlockEntity;{goggle_import}{tick_imports}
+import com.simibubi.create.content.kinetics.base.GeneratingKineticBlockEntity;{goggle_import}
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
@@ -177,7 +190,7 @@ public class {p.block_entity_name} extends GeneratingKineticBlockEntity{goggle_i
             updateGeneratedRotation();
         }}
     }}
-{tick}{goggle}
+{goggle}
 }}
 '''
 
@@ -188,9 +201,10 @@ public class {p.block_entity_name} extends GeneratingKineticBlockEntity{goggle_i
         block_const = camel_to_snake_upper(p.simple_name)
         be_const = block_const + '_BE'
         be_registry = p.be_registry_name
-        tick = self._tick_section()
+        #tick = self._tick_section()
+        procedure = self._procedure_section()
         goggle = self._goggle_section()
-        tick_imports = self._get_tick_imports_str()
+        #tick_imports = self._get_tick_imports_str()
 
         # --- DEĞİŞEN KISIM ---
         mod_blocks_class = self._get_mod_blocks_class()
@@ -203,13 +217,19 @@ public class {p.block_entity_name} extends GeneratingKineticBlockEntity{goggle_i
                 '\nimport net.minecraft.network.chat.Component;'
                 '\nimport java.util.List;'
             )
+            
+        procedure_import = ''
+        if cfg.get('procedure'):
+            procedure_import = (
+                f'\nimport {pkg}.procedures.{cfg['procedure']}Procedure;'
+            )
 
         goggle_implements = ', IHaveGoggleInformation' if cfg.get('use_goggle_override') else ''
 
         return f'''package {pkg}.block.entity;
 
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
-import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;{goggle_import}{tick_imports}
+import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;{goggle_import}
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -217,7 +237,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import {pkg}.init.{mod_blocks_class};
 import {pkg}.init.{be_registry};
-
+{procedure_import}
 import java.util.List;
 
 public class {p.block_entity_name} extends KineticBlockEntity{goggle_implements} {{
@@ -225,6 +245,16 @@ public class {p.block_entity_name} extends KineticBlockEntity{goggle_implements}
     public {p.block_entity_name}(BlockEntityType<?> type, BlockPos pos, BlockState state) {{
         super(type != null ? type : {be_registry}.{be_const}.get(), pos, state);
     }}
+    
+    private int tickCounter = 0;
+	private int tickTrigger = {cfg['tick_trigger']};
+    private double minRpm = {cfg['rpm_threshold']};
+    public double ImpactValue = {cfg['stress_impact']};
+	
+	public void setImpactValue(double value) {{
+	    this.ImpactValue = value;
+	    setChanged();
+	}}
 
     @Override
     public void addBehaviours(List<BlockEntityBehaviour> behaviours) {{
@@ -233,10 +263,20 @@ public class {p.block_entity_name} extends KineticBlockEntity{goggle_implements}
 
     @Override
     public float calculateStressApplied() {{
-        float impact = {cfg['stress_impact']}f;
+        float impact = (float) ImpactValue;
         this.lastStressApplied = impact;
         return impact;
     }}
-{tick}{goggle}
+
+    @Override
+    public void tick() {{
+        super.tick();
+        tickCounter++;
+        if (tickCounter % tickTrigger == 0) {{
+            if (minRpm >= Math.abs(this.getSpeed())) return;
+            {procedure}
+        }}
+    }}
+{goggle}
 }}
 '''

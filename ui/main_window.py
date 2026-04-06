@@ -190,19 +190,79 @@ class MainWindow(ctk.CTk):
 
         self.imp_frame = ctk.CTkFrame(self.values_container, fg_color="transparent")
         self.impact_entry = self._value_row(self.imp_frame, "Impact", "8.0", "SU")
+        self.rpm_threshold_entry = self._value_row(self.imp_frame, "Threshold", "32.0", "RPM", tooltip= "Minimum RPM threshold.\nBelow this value, the block won't activate.")
+        self.tick_trigger_entry = self._value_row(self.imp_frame, "Rpm Tick rate", "100", "tick", tooltip= "Tick rate. 1: every tick. 20: once every 20 tick (one second).")
+        self.rpm_procedure_entry = self._value_row(self.imp_frame, "Procedure", "", "", tooltip= "The name of the procedure that the block will call when triggered by rpm.\n Be sure procedure has world, x, y, z, blockstate dependencies.", entry_width=250)
 
         self._toggle_entity_values()
 
-    def _value_row(self, parent, label, default, unit):
+    def _value_row(self, parent, label, default, unit, tooltip=None, entry_width=90):
         row = ctk.CTkFrame(parent, fg_color="transparent")
         row.pack(fill="x", pady=3)
         ctk.CTkLabel(row, text=label, width=90, anchor="w").pack(side="left")
-        entry = ctk.CTkEntry(row, width=90)
+        entry = ctk.CTkEntry(row, width=entry_width) 
         entry.insert(0, default)
         entry.pack(side="left", padx=5)
-        ctk.CTkLabel(row, text=unit, text_color="gray").pack(side="left")
+        unit_label = ctk.CTkLabel(row, text=unit, text_color="gray")
+        unit_label.pack(side="left")
+
+        if tooltip:
+            tip_label = ctk.CTkLabel(
+                row,
+                text=" ?",
+                text_color="#4a9eff",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                cursor="question_arrow"
+            )
+            tip_label.pack(side="left", padx=(4, 0))
+            self._bind_tooltip(tip_label, tooltip)
+
         return entry
 
+
+    def _bind_tooltip(self, widget, text):
+        tooltip_win = None
+
+        def show(event):
+            nonlocal tooltip_win
+            # Zaten açıksa tekrar açma
+            if tooltip_win and tooltip_win.winfo_exists():
+                return
+
+            x = widget.winfo_rootx() + 20
+            y = widget.winfo_rooty() + 20
+
+            tooltip_win = ctk.CTkToplevel(self)
+            tooltip_win.wm_overrideredirect(True)          # Başlık çubuğu yok
+            tooltip_win.wm_geometry(f"+{x}+{y}")
+            tooltip_win.attributes("-topmost", True)
+
+            ctk.CTkLabel(
+                tooltip_win,
+                text=text,
+                fg_color="#1a1a2e",
+                corner_radius=6,
+                font=ctk.CTkFont(size=11),
+                text_color="white",
+                padx=10,
+                pady=6,
+                justify="left"
+            ).pack()
+
+        def hide(event):
+            nonlocal tooltip_win
+            if tooltip_win and tooltip_win.winfo_exists():
+                tooltip_win.destroy()
+            tooltip_win = None
+
+        widget.bind("<Enter>", show)
+        widget.bind("<Leave>", hide)
+    
+    # Focus lost
+        self.bind("<FocusOut>", hide)
+        self.bind("<Unmap>", hide)      # minimize
+        self.bind("<Configure>", hide)  # pencere taşınınca/boyut değişince
+        
     def _toggle_entity_values(self):
         self.gen_frame.pack_forget()
         self.imp_frame.pack_forget()
@@ -716,6 +776,18 @@ class MainWindow(ctk.CTk):
             cfg['stress_impact'] = float(self.impact_entry.get())
         except ValueError:
             cfg['stress_impact'] = 8.0
+        try:
+            cfg['tick_trigger'] = int(self.tick_trigger_entry.get())
+        except ValueError:
+            cfg['tick_trigger'] = 100
+        try:
+            cfg['rpm_threshold'] = float(self.rpm_threshold_entry.get())
+        except ValueError:
+            cfg['rpm_threshold'] = 16.0
+        try:
+            cfg['procedure'] = self.rpm_procedure_entry.get()
+        except ValueError:
+            cfg['procedure'] = ""
 
         return cfg
 

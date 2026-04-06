@@ -27,6 +27,9 @@ DEFAULT_CONFIG = {
     "stress_capacity": 16.0,
     "generated_speed": 64.0,
     "stress_impact": 8.0,
+    "tick_trigger": 100,
+    "rpm_threshold": 16.0,
+    "procedure": "",
 
     # Shaft Faces
     "shaft_north": False,

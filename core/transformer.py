@@ -8,7 +8,7 @@ def camel_to_snake_upper(name):
 
 class BlockTransformer:
     REMOVE_METHODS = {'rotate', 'mirror'}
-    EXTRACT_METHODS = {'tick'}
+    EXTRACT_METHODS = set()
     REMOVE_IMPORTS = {
         'import net.minecraft.world.level.block.DirectionalBlock;',
         'import net.minecraft.world.level.block.HorizontalDirectionalBlock;',
@@ -17,7 +17,7 @@ class BlockTransformer:
         'import net.minecraft.world.level.block.Mirror;',
         'import net.minecraft.world.level.block.RotatedPillarBlock;',
         'import net.minecraft.world.level.block.*;',
-        'import net.minecraft.server.level.ServerLevel;',
+
     }
     WILDCARD_REPLACEMENTS = [
         'import net.minecraft.world.level.block.Block;',
@@ -153,13 +153,7 @@ class BlockTransformer:
                 if method_name in self.REMOVE_METHODS:
                     i = end_i + 1
                     continue
-                elif method_name in self.EXTRACT_METHODS:
-                    tick_body = self.parser.get_tick_body(method_block)
-                    self.tick_imports = self._collect_tick_imports(tick_body)
-                    result.append("    // TODO: tick() moved to block entity")
-                    result.append('')
-                    i = end_i + 1
-                    continue
+                # EXTRACT_METHODS bloğu tamamen kaldırıldı
                 else:
                     result.extend(method_block)
                     i = end_i + 1
