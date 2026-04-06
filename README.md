@@ -25,3 +25,7 @@
 After creating your block as desired in the **MCreator interface**, open this program, select the block’s `.java` file, and configure your settings.
 
 In case of a crash, there is an **undo button**, but it is **not guaranteed to work 100%**.
+
+Video: 
+https://youtu.be/86hfP_EqgyY
+ 
